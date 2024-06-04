@@ -7,6 +7,12 @@ library(mclust)
 data(iris)
 data <- iris[, -5]  # Exclude the species column for clustering
 
+# Normalisasi Min-Max
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+data <- as.data.frame(lapply(data, normalize))
+
 # Calculate Coefficient of Variation for Each Attribute
 cv <- function(x) {
   return (sd(x) / mean(x))
@@ -62,14 +68,14 @@ assign_cluster <- function(data, centers) {
 clusters <- assign_cluster(data[, c(attribute1, attribute2)], cluster_centers)
 
 # Add Cluster Information to the Original Dataset
-iris$Cluster <- clusters
+data$Cluster <- clusters
 
 # Calculate mean values of each cluster
-cluster_means <- aggregate(. ~ Cluster, data = iris[, -5], mean)
+cluster_means <- aggregate(. ~ Cluster, data = data, mean)
 
 # Using cluster means as initial centroids for k-means
 set.seed(123)  # For reproducibility
-kmeans_result <- kmeans(data, centers = cluster_means[, -1])
+kmeans_result <- kmeans(data[, -5], centers = cluster_means[, -1])
 
 # Print the results
 print(kmeans_result$centers)
@@ -78,10 +84,11 @@ print(table(kmeans_result$cluster))
 # Add cluster assignments to the original dataset
 iris$Cluster <- kmeans_result$cluster
 
-# Evaluate clustering using Rand Index
+# Evaluate clustering using Adjusted Rand Index
 true_labels <- as.integer(iris$Species)  # Convert species to numeric
 predicted_labels <- iris$Cluster
 
+# Calculate Rand Index
 rand_index <- rand.index(true_labels, predicted_labels)
 cat("Rand Index:", rand_index, "\n")
 
@@ -100,7 +107,7 @@ initial_centers_df <- as.data.frame(initial_centers)
 initial_centers_df$label <- paste0("C", 1:nrow(initial_centers_df))
 
 # Create scatter plot using attribute1 and attribute2 with clusters and initial cluster center
-ggplot(iris, aes_string(x = attribute1, y = attribute2, color = "factor(Cluster)")) +
+ggplot(data, aes_string(x = attribute1, y = attribute2, color = "factor(Cluster)")) +
   geom_point(size = 3) +
   geom_point(data = initial_centers_df, aes_string(x = attribute1, y = attribute2), color = "red", size = 5, shape = 4) +
   geom_segment(data = initial_centers_df, aes(x = initial_centers_df[, 1], y = initial_centers_df[, 2], xend = c(initial_centers_df[-1, 1], initial_centers_df[1, 1]), yend = c(initial_centers_df[-1, 2], initial_centers_df[1, 2])), color = "blue") +

@@ -1,7 +1,7 @@
 # Load the required libraries
 library(fossil)
 library(ggplot2)
-library(mclust)
+library(mclust)  # For adjusted Rand index
 
 # Load the Iris dataset
 data(iris)
@@ -82,9 +82,11 @@ iris$Cluster <- kmeans_result$cluster
 true_labels <- as.integer(iris$Species)  # Convert species to numeric
 predicted_labels <- iris$Cluster
 
+# Calculate Rand Index
 rand_index <- rand.index(true_labels, predicted_labels)
 cat("Rand Index:", rand_index, "\n")
 
+# Calculate Adjusted Rand Index
 adjusted_rand_index <- adjustedRandIndex(true_labels, predicted_labels)
 cat("Adjusted Rand Index:", adjusted_rand_index, "\n")
 

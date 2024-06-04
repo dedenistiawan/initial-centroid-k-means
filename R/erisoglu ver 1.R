@@ -102,6 +102,21 @@ ggplot(iris, aes_string(x = attribute1, y = attribute2, color = "factor(Cluster)
        color = "Cluster") +
   theme_minimal()
 
+#==================
+# Determine initial cluster center
+initial_centers <- do.call(rbind, cluster_centers)
+colnames(initial_centers) <- c(attribute1, attribute2)
+
+# Create scatter plot using attribute1 and attribute2 with clusters and initial cluster center
+ggplot(iris, aes_string(x = attribute1, y = attribute2, color = "factor(Cluster)")) +
+  geom_point(size = 3) +
+  geom_point(data = as.data.frame(initial_centers), aes_string(x = attribute1, y = attribute2), color = "red", size = 5, shape = 4) +
+  geom_segment(data = as.data.frame(initial_centers), aes(x = initial_centers[, 1], y = initial_centers[, 2], xend = c(initial_centers[-1, 1], initial_centers[1, 1]), yend = c(initial_centers[-1, 2], initial_centers[1, 2])), color = "blue") +
+  labs(title = "Cluster Plot of Iris Dataset with Initial Cluster Centers",
+       x = attribute1,
+       y = attribute2,
+       color = "Cluster") +
+  theme_minimal()
 
 #==============================================
 #tambahan normalisasi MIN-MAX

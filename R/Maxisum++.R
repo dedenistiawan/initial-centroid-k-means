@@ -7,6 +7,14 @@ library(mclust)
 data(iris)
 data <- iris[, -5]  # Exclude the species column for clustering
 
+# Min-Max Normalization Function
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+
+# Apply Min-Max Normalization to the Data
+data <- as.data.frame(lapply(data, normalize))
+
 # Calculate Coefficient of Variation for Each Attribute
 cv <- function(x) {
   return (sd(x) / mean(x))
@@ -36,15 +44,19 @@ initial_center <- data[which.max(data_vectors), c(attribute1, attribute2)]
 # Add initial center to the cluster centers list
 cluster_centers <- list(initial_center)
 
-# Iterate to find the next cluster centers
+# K-means++ initialization
+set.seed(123)  # For reproducibility
+distances <- rep(Inf, nrow(data))
 for (k in 2:K) {
-  distances <- lapply(cluster_centers, function(center) {
-    center <- as.numeric(center)  # Ensure center is numeric
-    calculate_vector(center, data[, c(attribute1, attribute2)])
-  })
-  distances <- do.call(cbind, distances)  # Combine distances into a matrix
-  sum_distances <- rowSums(distances)
-  next_center <- data[which.max(sum_distances), c(attribute1, attribute2)]
+  for (i in 1:nrow(data)) {
+    point <- data[i, c(attribute1, attribute2)]
+    min_dist <- min(sapply(cluster_centers, function(center) {
+      center <- as.numeric(center)  # Ensure center is numeric
+      calculate_vector(center, point)
+    }))
+    distances[i] <- min(min_dist, distances[i])
+  }
+  next_center <- data[which.max(distances), c(attribute1, attribute2)]
   cluster_centers <- append(cluster_centers, list(next_center))
 }
 
@@ -62,14 +74,14 @@ assign_cluster <- function(data, centers) {
 clusters <- assign_cluster(data[, c(attribute1, attribute2)], cluster_centers)
 
 # Add Cluster Information to the Original Dataset
-iris$Cluster <- clusters
+data$Cluster <- clusters
 
 # Calculate mean values of each cluster
-cluster_means <- aggregate(. ~ Cluster, data = iris[, -5], mean)
+cluster_means <- aggregate(. ~ Cluster, data = data, mean)
 
 # Using cluster means as initial centroids for k-means
 set.seed(123)  # For reproducibility
-kmeans_result <- kmeans(data, centers = cluster_means[, -1])
+kmeans_result <- kmeans(data[, -5], centers = cluster_means[, -1])
 
 # Print the results
 print(kmeans_result$centers)
@@ -100,7 +112,7 @@ initial_centers_df <- as.data.frame(initial_centers)
 initial_centers_df$label <- paste0("C", 1:nrow(initial_centers_df))
 
 # Create scatter plot using attribute1 and attribute2 with clusters and initial cluster center
-ggplot(iris, aes_string(x = attribute1, y = attribute2, color = "factor(Cluster)")) +
+ggplot(data, aes_string(x = attribute1, y = attribute2, color = "factor(Cluster)")) +
   geom_point(size = 3) +
   geom_point(data = initial_centers_df, aes_string(x = attribute1, y = attribute2), color = "red", size = 5, shape = 4) +
   geom_segment(data = initial_centers_df, aes(x = initial_centers_df[, 1], y = initial_centers_df[, 2], xend = c(initial_centers_df[-1, 1], initial_centers_df[1, 1]), yend = c(initial_centers_df[-1, 2], initial_centers_df[1, 2])), color = "blue") +
